@@ -1,5 +1,8 @@
 import java.awt.Dimension;
+import java.lang.reflect.Method;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import javafx.beans.value.ChangeListener;
@@ -29,6 +32,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.events.EventListener;
 import org.w3c.dom.events.EventTarget;
+
 
 
 /**
@@ -67,12 +71,14 @@ public class BrowserView {
     private ResourceBundle myResources;
     // the data
     private BrowserModel myModel;
+    private Map<Button, Method> buttonToMethod;
 
     /**
      * Create a view of the given model of a web browser.
      */
     public BrowserView (BrowserModel model, String language) {
         myModel = model;
+        buttonToMethod = new HashMap<Button, Method>();
         // use resources for labels
         myResources = ResourceBundle.getBundle(DEFAULT_RESOURCE_PACKAGE + language);
         BorderPane root = new BorderPane();
@@ -234,7 +240,7 @@ public class BrowserView {
     }
 
     // makes a button using either an image or a label
-    private Button makeButton (String property, EventHandler<ActionEvent> handler) {
+    private Button makeButton (String property, String method) throws NoSuchMethodException, SecurityException {
         // represent all supported image suffixes
         final String IMAGEFILE_SUFFIXES = 
             String.format(".*\\.(%s)", String.join("|", ImageIO.getReaderFileSuffixes()));
@@ -247,7 +253,16 @@ public class BrowserView {
         } else {
             result.setText(label);
         }
-        result.setOnAction(handler);
+        Method methodToSet = this.getClass().getMethod(method);
+        buttonToMethod.put(result, methodToSet);
+        result.setOnAction(event -> {
+        	try {
+				buttonToMethod.get(result).invoke(this, new Object[] {});
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        });
         return result;
     }
 
